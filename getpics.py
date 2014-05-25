@@ -31,53 +31,66 @@ def normalize(link):
 
 
 
-visited = set()
-pic_number = 1
-
-def URL_dfs(link):
-    hash = getDoubleHash(link)
-    if(hash in visited):
-        return
-
-    visited.add(hash)
-    print link
-
-    suffix = isPicture(link)
-    if(suffix != ""):
-        global pic_number
-        urllib.urlretrieve(link, "./pics/" + str(pic_number) + suffix)
-        pic_number += 1
-        return
-
-    try:
-        htmlPage = urllib2.urlopen(link)
-    except urllib2.HTTPError:
-        return
-
-    try:
-        soup = BeautifulSoup(htmlPage)
-    except HTMLParseError:
-        return
-
-    for pageLink in soup.findAll('a'):
-        if(pageLink.has_attr("href")):
-            toGo = pageLink["href"]
-            if(toGo[0] == '/'):
-                URL_dfs(site + normalize(toGo))
-
-
-
 def isPicture(link):
     suff = [".jpg", ".png", ".gif"]
 
     for i in range(0, len(suff)):
         if(link[-len(suff[i]):] == suff[i]):
-            return suff[i];
-    return "";
+            return suff[i]
+    return ""
+
+
+
+Q = []
+visited = set()
+pic_number = 1
+
+def traverse(link, folder):
+    Q.append(link)
+    visited.add(getDoubleHash(link))
+
+    while(len(Q) > 0):
+        link = Q[-1]
+        Q.pop()
+
+        print link
+        try:
+            htmlPage = urllib2.urlopen(link)
+        except urllib2.HTTPError:
+            continue
+
+        try:
+            soup = BeautifulSoup(htmlPage)
+        except HTMLParseError:
+            continue
+
+        for pageLink in soup.findAll('a'):
+            if(pageLink.has_attr('href')):
+                newLink = pageLink['href']
+                
+                if(newLink[0] != '/'):
+                    continue
+
+                newLink = site + normalize(newLink)
+                hash = getDoubleHash(newLink)
+                if(hash in visited):
+                    continue
+                else:
+                    visited.add(hash)
+
+                suffix = isPicture(newLink)
+                if(suffix != ""):
+                    global pic_number
+                    urllib.urlretrieve(newLink, folder + str(pic_number) + suffix)
+                    pic_number += 1
+                    continue
+
+                Q.insert(0, newLink)
+            
 
 
 
 site = sys.argv[1]
-#folderToSave = sys.argv[2]
+folderToSave = sys.argv[2]
 
-URL_dfs(site)
+traverse(site, folderToSave)
