@@ -2,7 +2,9 @@ from HTMLParser import HTMLParser
 from bs4 import BeautifulSoup
 import urllib
 import urllib2
+import hashlib
 import sys
+import os
 
 
 
@@ -31,19 +33,22 @@ def normalize(link):
 
 
 
-def isPicture(link):
-    suff = [".jpg", ".png", ".gif"]
+def formPath(link, baseFolder):
+    splitted = link.split('/')
+    chanFolder = baseFolder + splitted[2]
+    if(not os.path.exists(chanFolder)):
+        os.makedirs(chanFolder)
 
-    for i in range(0, len(suff)):
-        if(link[-len(suff[i]):] == suff[i]):
-            return suff[i]
-    return ""
+    boardFolder = chanFolder + '/' + splitted[3] + '/'
+    if(not os.path.exists(boardFolder)):
+        os.makedirs(boardFolder)
+
+    return boardFolder
 
 
 
 Q = []
 visited = set()
-pic_number = 1
 
 def traverse(link, folder):
     Q.append(link)
@@ -78,15 +83,19 @@ def traverse(link, folder):
                 else:
                     visited.add(hash)
 
-                suffix = isPicture(newLink)
-                if(suffix != ""):
-                    global pic_number
-                    urllib.urlretrieve(newLink, folder + str(pic_number) + suffix)
-                    pic_number += 1
+                extension = newLink.split('.')[-1]
+                if(extension == "jpg" or extension == "png" or extension == "gif"):
+                    pathToSave = formPath(newLink, folder)
+                    tempPath = pathToSave + "temp"
+                    urllib.urlretrieve(newLink, tempPath)
+                    picMd5 = hashlib.md5()
+                    picMd5.update(open(tempPath, "r").read())
+                    picHash = picMd5.hexdigest()
+                    os.rename(tempPath, pathToSave + picHash + "." + extension)
                     continue
-
-                Q.insert(0, newLink)
-            
+                
+                if(extension == "html" or extension == "xml" or newLink[-1] == '/'):
+                    Q.insert(0, newLink)
 
 
 
