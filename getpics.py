@@ -83,18 +83,20 @@ def traverse(link, folder):
                 else:
                     visited.add(hash)
 
-                extension = newLink.split('.')[-1]
-                if(extension == "jpg" or extension == "png" or extension == "gif"):
+                ext = newLink.split('.')[-1]
+                picExtensions = ["jpg", "jpeg", "png", "gif"]
+                if(ext in picExtensions):
                     pathToSave = formPath(newLink, folder)
                     tempPath = pathToSave + "temp"
                     urllib.urlretrieve(newLink, tempPath)
                     picMd5 = hashlib.md5()
                     picMd5.update(open(tempPath, "r").read())
                     picHash = picMd5.hexdigest()
-                    os.rename(tempPath, pathToSave + picHash + "." + extension)
+                    os.rename(tempPath, pathToSave + picHash + "." + ext)
                     continue
                 
-                if(extension == "html" or extension == "xml" or newLink[-1] == '/'):
+                docExtensions = ["html", "xml"]
+                if(ext in docExtensions or newLink[-1] == '/'):
                     Q.insert(0, newLink)
 
 
